@@ -1,0 +1,184 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Rapport de Scan – SecuIA{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  <i class="bi bi-file-earmark-bar-graph text-primary"></i> Rapport de Scan
+</div>
+
+<!-- ── KPI globaux ── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="kpi">
+      <div class="kpi-value text-primary">0</div>
+      <div class="kpi-label"><i class="bi bi-bug me-1"></i>Total findings</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi">
+      <div class="kpi-value text-danger">0</div>
+      <div class="kpi-label"><i class="bi bi-exclamation-octagon me-1"></i>Critiques</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi">
+      <div class="kpi-value text-warning">0</div>
+      <div class="kpi-label"><i class="bi bi-exclamation-triangle me-1"></i>Élevés</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi">
+      <div class="kpi-value text-info">0</div>
+      <div class="kpi-label"><i class="bi bi-info-circle me-1"></i>Moyens / Faibles</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FILTRES AVEC BOUTON APPLIQUER ── -->
+<div class="card mb-4">
+  <div class="card-header"><i class="bi bi-funnel me-1"></i>FILTRES</div>
+  <div class="card-body">
+    <div class="row g-3">
+      <!-- Filtre Sévérité -->
+      <div class="col-md-3">
+        <label class="form-label">Sévérité</label>
+        <select class="form-select" id="severityFilter">
+          <option value="all">Toutes</option>
+          <option value="critical">Critique</option>
+          <option value="high">Élevé</option>
+          <option value="medium">Moyen</option>
+          <option value="low">Faible</option>
+          <option value="info">Info</option>
+        </select>
+      </div>
+      <!-- Filtre Catégorie OWASP -->
+      <div class="col-md-3">
+        <label class="form-label">Catégorie OWASP</label>
+        <select class="form-select" id="owaspFilter">
+          <option value="all">Toutes</option>
+          <option value="A01">A01 - Broken Access Control</option>
+          <option value="A02">A02 - Cryptographic Failures</option>
+          <option value="A03">A03 - Injection</option>
+          <option value="A04">A04 - Insecure Design</option>
+          <option value="A05">A05 - Security Misconfiguration</option>
+          <option value="A06">A06 - Vulnerable Components</option>
+          <option value="A07">A07 - Identification Failures</option>
+          <option value="A08">A08 - Integrity Failures</option>
+          <option value="A09">A09 - Logging Failures</option>
+          <option value="A10">A10 - SSRF</option>
+        </select>
+      </div>
+      <!-- Filtre Outil -->
+      <div class="col-md-3">
+        <label class="form-label">Outil</label>
+        <select class="form-select" id="toolFilter">
+          <option value="all">Tous</option>
+          <option value="sonarqube">SonarQube</option>
+          <option value="semgrep">Semgrep</option>
+          <option value="bandit">Bandit</option>
+          <option value="snyk">Snyk</option>
+          <option value="nuclei">Nuclei</option>
+          <option value="wapiti">Wapiti</option>
+          <option value="zap">OWASP ZAP</option>
+        </select>
+      </div>
+      <!-- Filtre Application -->
+      <div class="col-md-3">
+        <label class="form-label">Application</label>
+        <select class="form-select" id="appFilter">
+          <option value="all">Toutes</option>
+          <option value="app1">Application Web 1</option>
+          <option value="app2">Application Web 2</option>
+          <option value="app3">API Gateway</option>
+        </select>
+      </div>
+    </div>
+    <!-- Bouton Appliquer les filtres -->
+    <div class="row mt-3">
+      <div class="col-12">
+        <button class="btn btn-primary" id="applyFiltersBtn">
+          <i class="bi bi-search me-1"></i> Appliquer les filtres
+        </button>
+        <button class="btn btn-secondary ms-2" id="resetFiltersBtn">
+          <i class="bi bi-arrow-repeat me-1"></i> Réinitialiser
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ÉTAT VIDE (avant scan IA) ── -->
+<div class="card" id="emptyState">
+  <div class="empty-state">
+    <i class="bi bi-robot"></i>
+    <p><strong>Aucun rapport disponible</strong></p>
+    <p>Ce champ sera rempli automatiquement par le module IA après l'exécution d'un scan sur une application.</p>
+  </div>
+</div>
+
+<!-- ── MESSAGE APRÈS FILTRAGE (quand aucune donnée) ── -->
+<div class="card" id="noResults" style="display: none;">
+  <div class="empty-state">
+    <i class="bi bi-search"></i>
+    <p><strong>Aucun résultat</strong></p>
+    <p>Aucune vulnérabilité ne correspond aux filtres sélectionnés.</p>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Éléments DOM
+  const emptyState = document.getElementById('emptyState');
+  const noResults = document.getElementById('noResults');
+  const applyBtn = document.getElementById('applyFiltersBtn');
+  const resetBtn = document.getElementById('resetFiltersBtn');
+  
+  // Éléments des filtres
+  const severityFilter = document.getElementById('severityFilter');
+  const owaspFilter = document.getElementById('owaspFilter');
+  const toolFilter = document.getElementById('toolFilter');
+  const appFilter = document.getElementById('appFilter');
+
+  // Pour l'instant, pas de données
+  let hasData = false;
+
+  // Fonction pour appliquer les filtres
+  function applyFilters() {
+    if (!hasData) {
+      // Pas encore de données scannées
+      emptyState.style.display = 'block';
+      noResults.style.display = 'none';
+      return;
+    }
+    
+    // Quand les données seront disponibles, ce code s'exécutera
+    console.log('Filtres appliqués :', {
+      severity: severityFilter.value,
+      owasp: owaspFilter.value,
+      tool: toolFilter.value,
+      app: appFilter.value
+    });
+  }
+
+  // Fonction pour réinitialiser les filtres
+  function resetFilters() {
+    severityFilter.value = 'all';
+    owaspFilter.value = 'all';
+    toolFilter.value = 'all';
+    appFilter.value = 'all';
+    
+    if (!hasData) {
+      emptyState.style.display = 'block';
+      noResults.style.display = 'none';
+    }
+  }
+
+  // Événements des boutons
+  applyBtn.addEventListener('click', applyFilters);
+  resetBtn.addEventListener('click', resetFilters);
+
+  console.log('Page Rapport de Scan prête - En attente des données du module IA');
+</script>
+{% endblock %}

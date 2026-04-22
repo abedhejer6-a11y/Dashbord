@@ -1,0 +1,44 @@
+{% extends 'dashboard/base.html' %}
+{% block title %}Recommandations – SecuIA{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  <i class="bi bi-lightbulb text-primary"></i> Recommandations
+</div>
+
+<!-- ── KPI globaux ── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="kpi">
+      <div class="kpi-value text-primary">0</div>
+      <div class="kpi-label"><i class="bi bi-list-check me-1"></i>Recommandations actives</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="kpi">
+      <div class="kpi-value text-danger">0</div>
+      <div class="kpi-label"><i class="bi bi-exclamation-octagon me-1"></i>Recommandations critiques</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="kpi">
+      <div class="kpi-value text-success">0</div>
+      <div class="kpi-label"><i class="bi bi-check-circle me-1"></i>Taux de correction</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RECOMMANDATIONS ACTIVES ── -->
+<div class="card">
+  <div class="card-header"><i class="bi bi-list-check me-1"></i>RECOMMANDATIONS IA</div>
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="bi bi-robot" style="font-size: 3rem; color: #64748b;"></i>
+      <p><strong>Aucune recommandation pour le moment</strong></p>
+      <p>Ce champ sera alimenté automatiquement par le module IA.</p>
+      <p>Les recommandations de correction pour les findings <strong class="text-danger">Critique</strong> et <strong class="text-warning">Élevé</strong> apparaîtront ici.</p>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
