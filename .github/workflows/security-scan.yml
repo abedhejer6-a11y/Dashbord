@@ -1,0 +1,31 @@
+name: Scan Sécurité
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Cloner le code
+        uses: actions/checkout@v3
+      
+      - name: Installer Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      - name: Installer Bandit
+        run: pip install bandit
+      
+      - name: Scanner avec Bandit
+        run: bandit -r . -f json -o bandit-results.json || true
+      
+      - name: Sauvegarder résultats
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-results
+          path: bandit-results.json
